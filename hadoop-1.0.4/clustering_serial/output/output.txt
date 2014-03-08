@@ -1,0 +1,9 @@
+Node1	Node4	a
+Node2	Node5	a	b	c	d	e	f	g	h	i
+Node3	Node8	a	b	c	d	e	f	g	h	i	j	k	l	m	n	o	p	q	r	s	t	u	v	w
+Node4	Node4	a	b
+Node5	Node5	a	b	c	d	e	f	g	h	i	j
+Node6	Node5	a	b	c	d	e	f	g	h	i	j	k
+Node7	Node4	a	b	c
+Node8	Node8	a	b	c	d	e	f	g	h	i	j	k	l	m	n	o	p	q	r	s	t	u	v	w	x
+Node9	Node8	a	b	c	d	e	f	g	h	i	j	k	l	m	n	o	p	q	r	s	t	u	v	w	x	y
