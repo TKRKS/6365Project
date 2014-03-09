@@ -53,6 +53,7 @@ public class ClusteringSerialMain {
 		outputWriter.close();
 		//Run through the specified number of runs
 		for (int i = 0; i < runs; i++) {
+			System.out.println("Run " + i);
 			String inputFile = i % 2 == 0 ? "temp1" : "temp2";
 			String outputFile = i % 2 == 0 ? "temp2" : "temp1";
 			//Empty the temp file

@@ -144,7 +144,7 @@ public class ClusteringSerialMain {
 				}	
 			}
 			output = output + "\t" + closest.getId();
-			for (int i = 1; i < splitLine.length; i++) {
+			for (int i = 2; i < splitLine.length; i++) {
 				output = output + "\t" + splitLine[i];
 			}
 			output = output + "\n";

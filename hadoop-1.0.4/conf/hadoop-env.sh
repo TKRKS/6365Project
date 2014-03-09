@@ -6,7 +6,7 @@
 # remote nodes.
 
 # The java implementation to use.  Required.
-export JAVA_HOME=/usr/lib/jvm/java-6-openjdk
+export JAVA_HOME=/usr/lib/jvm/java-6-openjdk-i386
 
 # Extra Java CLASSPATH elements.  Optional.
 # export HADOOP_CLASSPATH=
@@ -16,6 +16,7 @@ export JAVA_HOME=/usr/lib/jvm/java-6-openjdk
 
 # Extra Java runtime options.  Empty by default.
 # export HADOOP_OPTS=-server
+export HADOOP_OPTS="-Xmx1024m"
 
 # Command specific options appended to HADOOP_OPTS when specified
 export HADOOP_NAMENODE_OPTS="-Dcom.sun.management.jmxremote $HADOOP_NAMENODE_OPTS"
@@ -25,7 +26,7 @@ export HADOOP_BALANCER_OPTS="-Dcom.sun.management.jmxremote $HADOOP_BALANCER_OPT
 export HADOOP_JOBTRACKER_OPTS="-Dcom.sun.management.jmxremote $HADOOP_JOBTRACKER_OPTS"
 # export HADOOP_TASKTRACKER_OPTS=
 # The following applies to multiple commands (fs, dfs, fsck, distcp etc)
-# export HADOOP_CLIENT_OPTS
+#export HADOOP_CLIENT_OPTS="-Xmx2048m"
 
 # Extra ssh options.  Empty by default.
 # export HADOOP_SSH_OPTS="-o ConnectTimeout=1 -o SendEnv=HADOOP_CONF_DIR"
