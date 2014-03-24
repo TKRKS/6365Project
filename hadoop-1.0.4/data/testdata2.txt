@@ -1,0 +1,12 @@
+trainx 0 .01 -.1
+trainx 1 3.2 .02
+trainx 2 6.8 1.03
+trainy 0 1
+trainy 1 2
+trainy 2 4
+testx 0 12 4.2
+testx 1 24 8.4
+testx 2 48 16.8
+testy 0 4
+testy 1 8
+testy 2 16
