@@ -349,11 +349,11 @@ public class MapReduceLinearRegression {
 	 		tokenizer = new StringTokenizer(line);
 			matrix = tokenizer.nextToken();
 			row = tokenizer.nextToken();
-			if (matrix.equals("weight") || matrix.equals("trainx")) {	
-		 		long column = 0;
+			if (matrix.equals("weight") || matrix.equals("trainx")) {
+				int column = 0;	
 				while (tokenizer.hasMoreTokens()) {
-					output.collect(new Text(row + " " + new Long(column).toString()), new Text(row + " " + tokenizer.nextToken()));
-					column++;			
+					output.collect(new Text(row), new Text(matrix + " " + column + " " + tokenizer.nextToken()));
+					column++;
 				}
 			}			
  	 	}
@@ -361,26 +361,32 @@ public class MapReduceLinearRegression {
  	
 	public static class WeightTimesXReduce extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
  		public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
-			//if (key.toString().contains("t")) {
+			if (key.toString().contains("t")) {
 				while(values.hasNext()) {
 					output.collect(key, values.next());
 				}
-			/*} else {
+			} else {
 				//String finalValue = values.next().toString();
+				double weight = 0.0;
 				HashMap<Integer, String> items = new HashMap<Integer, String>();
 				while (values.hasNext()) {
 					StringTokenizer tokens = new StringTokenizer(values.next().toString());
-					Integer position = Integer.parseInt(tokens.nextToken());
-					String val = tokens.nextToken();
-					items.put(position, val);
-					//finalValue += (" " + );
+					String matrix = tokens.nextToken();
+					if (matrix.equals("weight")) {
+						tokens.nextToken();
+						weight = Double.parseDouble(tokens.nextToken());
+					} else {
+						Integer position = Integer.parseInt(tokens.nextToken());
+						String val = tokens.nextToken();
+						items.put(position, val);
+					}
 				}
 				String finalValue = "";
 				for (int i = 0; i < items.size(); i++) {
-					finalValue = finalValue + " " + items.get(i);
+					finalValue = finalValue + " " + (Double.parseDouble(items.get(i)) * weight);
 				}
-				output.collect(new Text("transposedTrainY " + key.toString()), new Text(finalValue));
-			}*/
+				output.collect(new Text("weightTimesX " + key.toString()), new Text(finalValue));
+			}
  		}
 	}
  	
