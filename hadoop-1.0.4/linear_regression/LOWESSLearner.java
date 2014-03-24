@@ -1,6 +1,6 @@
 import java.util.Arrays;
 
-import org.apache.commons.math.linear.*;
+import org.apache.commons.math3.linear.*;
 
 public class LOWESSLearner {
 	private RealMatrix trainX, trainY, testX, testY;
@@ -45,13 +45,12 @@ public class LOWESSLearner {
 	
 	private RealMatrix getWeights(RealMatrix p){
 		int n = trainX.getRowDimension();
-		double[] diagonal = new double[n];
-		Arrays.fill(diagonal, 1);
-		RealMatrix weights = MatrixUtils.createRealDiagonalMatrix(diagonal);
+		RealMatrix weights = MatrixUtils.createRealMatrix(n,n);
 		for(int i=0;i<n;i++){
 			double gk = gaussianKernel(trainX.getRowMatrix(i),p);
-			weights.setEntry(n, n, gk);
+			weights.addToEntry(i, i, gk);
 		}
+		System.out.println(weights);
 		return weights;
 	}
 	
@@ -60,10 +59,9 @@ public class LOWESSLearner {
 		RealMatrix weights = getWeights(p);
 		
 		RealMatrix x = this.trainX;
-		RealMatrix y = this.trainY.transpose();
-		
+		RealMatrix y = this.trainY;
 		RealMatrix xt = x.transpose().multiply(weights.multiply(x));
-		RealMatrix inv_xt = new LUDecompositionImpl(xt).getSolver().getInverse();
+		RealMatrix inv_xt = new LUDecomposition(xt).getSolver().getInverse();
 		RealMatrix betas = inv_xt.multiply(x.transpose().multiply(weights.multiply(y)));
 		RealMatrix product = betas.multiply(p);
 		result = product.getEntry(0,0);
