@@ -1,0 +1,116 @@
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.StringTokenizer;
+
+public class SplitData {
+
+	private static int totalTrain = 463715;
+	private static int totalTest = 50000;
+	private static int cutoff = 10000;
+	/**
+	 * @param args
+	 * @throws IOException 
+	 */
+	public static void main(String[] args) throws IOException {		
+		FileInputStream file = new FileInputStream(args[0]);
+		BufferedReader reader = new BufferedReader(new InputStreamReader(file));
+
+		reader.mark(1);
+		String line = reader.readLine();
+		StringTokenizer tokenizer = new StringTokenizer(line,",");
+
+		int numTrain = cutoff;
+		int numTest = cutoff;
+		int numFeats = tokenizer.countTokens()-1;
+
+		RealMatrix trainX = new Array2DRowRealMatrix(numTrain,numFeats);
+		RealMatrix trainY = new Array2DRowRealMatrix(numTrain,1);
+		RealMatrix testX = new Array2DRowRealMatrix(numTest, numFeats);
+		RealMatrix testY = new Array2DRowRealMatrix(numTest,1);
+		
+		reader.reset();
+
+        	FileWriter fstream = new FileWriter("filteredData.txt", true);
+        	BufferedWriter out = new BufferedWriter(fstream);
+		
+		//Parse training set
+		for(int i=0 ; i<totalTrain; i++){
+			System.out.println(i);
+			if (i < cutoff) {
+				line = reader.readLine();
+				tokenizer = new StringTokenizer(line,",");
+			
+				double[] y = new double[1];
+				double[] x = new double[numFeats];
+			
+				y[0] = Double.parseDouble(tokenizer.nextToken());
+				for(int j=0; j<numFeats; j++){
+					x[j] = Double.parseDouble(tokenizer.nextToken());
+				}
+				trainX.setRow(i, x);
+				trainY.setRow(i, y);
+			} else {
+				line = reader.readLine();
+			}
+		}
+
+		//Parse tesing set
+		for(int i=0 ; i<totalTest; i++){
+
+			if (i < cutoff) {
+				line = reader.readLine();
+				tokenizer = new StringTokenizer(line,",");
+			
+				double[] y = new double[1];
+				double[] x = new double[numFeats];
+			
+				y[0] = Double.parseDouble(tokenizer.nextToken());
+				for(int j=0; j<numFeats; j++){
+					x[j] = Double.parseDouble(tokenizer.nextToken());
+				}
+				testX.setRow(i, x);
+				testY.setRow(i, y);
+			} else {
+				reader.readLine();
+			}
+		}
+
+		//Output
+		for (int i = 0; i < cutoff; i++) {
+			String trainxString = "trainx " + i;
+			for (int j = 0; j < numFeats; j++) {
+				trainxString = trainxString + " " + trainX.getEntry(i, j);  
+			}
+			trainxString = trainxString + "\n";
+			out.write(trainxString);
+		}
+		for (int i = 0; i < cutoff; i++) {
+			String trainyString = "trainy " + i + " " + testX.getEntry(i, 0);
+			trainyString = trainyString + "\n";
+			out.write(trainyString);
+		}
+		for (int i = 0; i < cutoff; i++) {
+			String testxString = "testx " + i;
+			for (int j = 0; j < numFeats; j++) {
+				testxString = testxString + " " + trainX.getEntry(i, j); 
+			}
+			testxString = testxString + "\n";
+			out.write(testxString);
+		}
+		for (int i = 0; i < cutoff; i++) {
+			String testyString = "testy " + i + " " + testX.getEntry(i, 0);
+			testyString = testyString + "\n";
+			out.write(testyString);
+		}
+
+		file.close();
+		reader.close();
+		out.close();
+		fstream.close();
+		
+	}
+
+}
