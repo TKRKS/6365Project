@@ -12,159 +12,11 @@ import org.apache.hadoop.util.*;
  	
 public class MapReduceLinearRegression {
 
-	static int splitValue = 5;//463715;
-	static int cutoff = 3;//10000;
-	static double a = 1;//463715
-	static double c = 0.5;//463715
-	static int xRows = 2;//16;
+	static int cutoff = 5000;//10000;//3;//10000;
+	static double a = 1;
+	static double c = 1000;
+	static int xRows = 90;//4;//16;
 	static int yRows;
- 	
-	public static class Map extends MapReduceBase implements Mapper<LongWritable, Text, Text, DoubleWritable> {
- 		private final static IntWritable one = new IntWritable(1);
- 	        private Text word = new Text();
- 	
- 	        public void map(LongWritable key, Text value, OutputCollector<Text, DoubleWritable> output, Reporter reporter) throws IOException {
-			String line = value.toString();
-	 		StringTokenizer tokenizer = new StringTokenizer(line, ",");
-	 		String predictedValueString = tokenizer.nextToken();
-			double predictedValue = Double.parseDouble(predictedValueString);
-			tokenizer.nextToken();
-			String centeroid = null;
-			double sum = 0.0;
-			while (tokenizer.hasMoreTokens()) {
-				String token = tokenizer.nextToken();
-				sum += Float.parseFloat(token);			
-			}
-			double difference = predictedValue - sum;
-			double regressionValue = Math.pow(difference, 2.0);
-			
-			output.collect(new Text("Sqaured Difference"), new DoubleWritable(regressionValue));
- 	 	}
-	}
- 	
-	public static class Reduce extends MapReduceBase implements Reducer<Text, DoubleWritable, Text, DoubleWritable> {
- 		public void reduce(Text key, Iterator<DoubleWritable> values, OutputCollector<Text, DoubleWritable> output, Reporter reporter) throws IOException {
-			double finalValue = 0.0;
-			while (values.hasNext()) {
-				finalValue += values.next().get();
-			}
-			output.collect(new Text("Final Value:"), new DoubleWritable(finalValue));
- 		}
-	}
-
-	public static class SplitMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, Text> {
- 		private final static IntWritable one = new IntWritable(1);
- 	        private Text word = new Text();
- 	
- 	        public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
-			String line = value.toString();
-	 		StringTokenizer tokenizer = new StringTokenizer(line, ",");
-			String yValue = tokenizer.nextToken();
-			//if (key.compareTo(new LongWritable(splitValue)) <= 0) {
-				output.collect(new Text("y"), new Text(yValue));
-			//} else {
-				//output.collect(new Text("testy " + key.toString()), new Text(yValue));
-			//}
-			String xValue = tokenizer.nextToken();
-			while (tokenizer.hasMoreTokens()) {
-				xValue = xValue + " " + tokenizer.nextToken();
-			}
-			//if (key.compareTo(new LongWritable(splitValue)) <= 0) {
-				output.collect(new Text("x"), new Text(xValue));
-			//} else {
-			//	output.collect(new Text("testx " + key.toString()), new Text(xValue));
-			//}
-			
- 	 	}
-	}
- 	
-	public static class SplitReduce extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
- 		public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
-			//String finalValue = values.next().toString();
-			int i = 0;
-			while (values.hasNext()) {
-				if (i < splitValue) {
-					if (i < cutoff) {
-						output.collect(new Text("train"+ key + " " + i), values.next());
-					} else {
-						values.next();
-					}
-				} else {
-					if ((i - splitValue) < cutoff) {
-						output.collect(new Text("test" + key + " " + (i - splitValue)), values.next());
-					} else {
-						values.next();
-					}
-				}
-				i++;
-				//finalValue += ("," + values.next().toString());
-			}
-			//String matrix = new StringTokenizer(key.toString()).nextToken();
-
- 		}
-	}
-
-	public static class WeightsDifferenceMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, Text> {
- 		private final static IntWritable one = new IntWritable(1);
- 	        private Text word = new Text();
- 	
- 	        public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
-			String line = value.toString();
-			//Save the matrix line
-	 		StringTokenizer tokenizer = new StringTokenizer(line);
-			String matrix = tokenizer.nextToken();
-			String row = tokenizer.nextToken();
-			String valueString = "";
-			while (tokenizer.hasMoreTokens()) {
-				valueString = valueString + " " + tokenizer.nextToken();
-			}
-			output.collect(new Text(matrix + " " + row), new Text(valueString));
-			//Calculate weight difference
-	 		tokenizer = new StringTokenizer(line);
-			matrix = tokenizer.nextToken();		
-			row = tokenizer.nextToken();
-			if (matrix.equals("trainx")) {
-				output.collect(new Text(row), new Text(line));				
-			}
-			if (matrix.equals("testx")) {
-				for (int i = 0; i < splitValue; i++) {
-					output.collect(new Text(Integer.toString(i)), new Text(line));				
-				}
-			}
- 	 	}
-	}
- 	
-	public static class WeightsDifferenceReduce extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
- 		public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
-			if (key.toString().contains("t")) {
-				output.collect(key, values.next());
-			} else {
-				String line1 = values.next().toString();
-				String line2 = values.next().toString();
-	 			StringTokenizer tokenizer1 = new StringTokenizer(line1);
-				StringTokenizer tokenizer2 = new StringTokenizer(line2);
-				String matrix1 = tokenizer1.nextToken();
-				String matrix2 = tokenizer2.nextToken();
-				String row1 = tokenizer1.nextToken();
-				String row2 = tokenizer2.nextToken();
-				ArrayList<Double> list = new ArrayList<Double>();
-				while (tokenizer1.hasMoreTokens()) {
-					if (matrix1.contains("train")) {
-						list.add(Double.parseDouble(tokenizer2.nextToken()) - Double.parseDouble(tokenizer1.nextToken()));
-					} else {
-						list.add(Double.parseDouble(tokenizer1.nextToken()) - Double.parseDouble(tokenizer2.nextToken()));
-					}
-				}
-				String row = (matrix1.contains("train") ? row1 : row2);
-				String matrixLine = "";
-				for (int i = 0; i < list.size(); i++) {
-					matrixLine = matrixLine + " " + list.get(i);
-				}
-				output.collect(new Text("weight " + row), new Text(matrixLine));
-			}			
-
- 		}
-	}
 
 	public static class TransposeWeightMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, Text> {
  		private final static IntWritable one = new IntWritable(1);
@@ -235,8 +87,6 @@ public class MapReduceLinearRegression {
 					valueString = valueString + " " + tokenizer.nextToken();
 				}
 				output.collect(new Text(matrix + " " + row), new Text(valueString));
-			} else {
-				return;
 			}	
 			//Calculate weight difference
 	 		tokenizer = new StringTokenizer(line);
@@ -245,8 +95,8 @@ public class MapReduceLinearRegression {
 			if (matrix.equals("trainx")) {
 				output.collect(new Text(row), new Text(line));	
 			}
-			if (matrix.equals("testx")) {
-				for (int i = 0; i < cutoff; i++) {
+			if (matrix.equals("testx") && row.equals("0")) {
+				for (int i = 0; i  < cutoff; i++) {
 					output.collect(new Text(Integer.toString(i)), new Text(line));	
 				}
 			}
@@ -279,7 +129,7 @@ public class MapReduceLinearRegression {
 				for (int i = 0; i < list.size(); i++) {
 					sum = sum + Math.pow(list.get(i), 2);
 				}
-				double gauessianKernel = a * (sum/((-2.0 * Math.pow(c, 2))));
+				double gauessianKernel = a * Math.exp((sum/((-2.0 * Math.pow(c, 2)))));
 				output.collect(new Text("weight " + row), new Text(Double.toString(gauessianKernel)));
 			}			
 
@@ -1085,6 +935,111 @@ public class MapReduceLinearRegression {
 			}
  		}
 	}
+
+	public static class TransposeBetasMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, Text> {
+ 	
+ 	        public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
+			String line = value.toString();
+			//Save the matrix line
+	 		StringTokenizer tokenizer = new StringTokenizer(line);
+			String matrix = tokenizer.nextToken();
+			String row = tokenizer.nextToken();
+			String valueString = "";
+			while (tokenizer.hasMoreTokens()) {
+				valueString = valueString + " " + tokenizer.nextToken();
+			}
+			if ( matrix.contains("testx")) {
+				output.collect(new Text(matrix + " " + row), new Text(valueString));
+			}
+			//Transpose trainy
+	 		tokenizer = new StringTokenizer(line);
+			matrix = tokenizer.nextToken();
+			row = tokenizer.nextToken();
+			if (matrix.equals("betas")) {	
+		 		long column = 0;
+				while (tokenizer.hasMoreTokens()) {
+					output.collect(new Text(new Long(column).toString()), new Text(row + " " + tokenizer.nextToken()));
+					column++;			
+				}
+			}
+			
+ 	 	}
+	}
+ 	
+	public static class TransposeBetasReduce extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
+ 		public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
+			if (key.toString().contains("testx")) {
+				while(values.hasNext()) {
+					output.collect(key, values.next());
+				}
+			} else {
+				//String finalValue = values.next().toString();
+				HashMap<Integer, String> items = new HashMap<Integer, String>();
+				while (values.hasNext()) {
+					String test = values.next().toString();
+					StringTokenizer tokens = new StringTokenizer(test);
+					Integer position = Integer.parseInt(tokens.nextToken());
+					String val = tokens.nextToken();
+					items.put(position, val);
+					//finalValue += (" " + );
+				}
+				String finalValue = "";
+				for (int i = 0; i < items.size(); i++) {
+					finalValue = finalValue + " " + items.get(i);
+				}
+				output.collect(new Text("transposedBetas " + key.toString()), new Text(finalValue));
+			}
+ 		}
+	}
+
+
+	public static class BetasTimesTestXMap extends MapReduceBase implements Mapper<LongWritable, Text, Text, Text> {
+ 		private final static IntWritable one = new IntWritable(1);
+ 	        private Text word = new Text();
+ 	
+ 	        public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
+			String line = value.toString();
+			//Save the matrix line
+	 		StringTokenizer tokenizer = new StringTokenizer(line);
+			String matrix = tokenizer.nextToken();
+			String row = tokenizer.nextToken();
+			if (matrix.equals("transposedBetas")) {
+		 		long column = 0;
+				while (column < 1) {
+					output.collect(new Text(row), new Text(line));
+					column++;			
+				}
+			}
+			if (matrix.equals("testx")) {	
+		 		long column = 0;
+				while (column < 1) {
+					output.collect(new Text(row), new Text(line));
+					column++;			
+				}
+			}
+			
+ 	 	}
+	}
+ 	
+	public static class BetasTimesTestXReduce extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
+ 		public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
+				String line1 = values.next().toString();
+				String line2 = values.next().toString();
+	 			StringTokenizer tokenizer1 = new StringTokenizer(line1);
+				StringTokenizer tokenizer2 = new StringTokenizer(line2);
+				String matrix1 = tokenizer1.nextToken();
+				String matrix2 = tokenizer2.nextToken();
+				String row1 = tokenizer1.nextToken();
+				String row2 = tokenizer2.nextToken();
+				ArrayList<Double> list = new ArrayList<Double>();
+				double sum = 0.0;
+				while (tokenizer1.hasMoreTokens()) {
+					sum += (Double.parseDouble(tokenizer1.nextToken()) * Double.parseDouble(tokenizer2.nextToken()));
+				}
+				output.collect(key, new Text(Double.toString(sum)));
+ 		}
+	}
+
  	
 	public static void main(String[] args) throws Exception {
 		FileSystem fs = FileSystem.get(new Configuration());
@@ -1093,23 +1048,6 @@ public class MapReduceLinearRegression {
 		fs.delete(new Path(args[1]), true);
 		fs.delete(new Path("temp1"), true);
 		fs.delete(new Path("temp2"), true);
-
-		//Organize the data
-		/*JobConf conf = new JobConf(MapReduceLinearRegression.class);
-	 	conf.setJobName("Linear Regression Split Data");
-	 	conf.setOutputKeyClass(Text.class);
-	 	conf.setOutputValueClass(Text.class);	
- 
-	 	conf.setMapperClass(MapReduceLinearRegression.SplitMap.class);
-	 	conf.setReducerClass(MapReduceLinearRegression.SplitReduce.class);
-	 	
-	 	conf.setInputFormat(TextInputFormat.class);
-	 	conf.setOutputFormat(TextOutputFormat.class);
-	 	
-	 	FileInputFormat.setInputPaths(conf, new Path(args[0]));
-	 	FileOutputFormat.setOutputPath(conf, new Path("temp1"));
-		JobClient.runJob(conf);*/
-	 	
 
 		//Calculate Weights
 		JobConf conf = new JobConf(MapReduceLinearRegression.class);
@@ -1128,24 +1066,6 @@ public class MapReduceLinearRegression {
 	 	FileOutputFormat.setOutputPath(conf, new Path("temp2"));
 	 	
 		JobClient.runJob(conf);
-
-		//transpose testy Weights
-		/*conf = new JobConf(MapReduceLinearRegression.class);
-	 	conf.setJobName("Linear Regression Transpose trainy");
-	 	conf.setOutputKeyClass(Text.class);
-	 	conf.setOutputValueClass(Text.class);	
- 
-	 	conf.setMapperClass(MapReduceLinearRegression.TransposeTrainYMap.class);
-	 	conf.setReducerClass(MapReduceLinearRegression.TransposeTrainYReduce.class);
-	 	
-	 	conf.setInputFormat(TextInputFormat.class);
-	 	conf.setOutputFormat(TextOutputFormat.class);
-	 	
-		fs.delete(new Path("temp1"), true);
-	 	FileInputFormat.setInputPaths(conf, new Path("temp2"));
-	 	FileOutputFormat.setOutputPath(conf, new Path("temp1"));
-	 	
-		JobClient.runJob(conf);*/
 
 		//Weights time x
 		conf = new JobConf(MapReduceLinearRegression.class);
@@ -1221,7 +1141,6 @@ public class MapReduceLinearRegression {
 		JobClient.runJob(conf);
 
 		//Recombine
-		//Multiply
 		conf = new JobConf(MapReduceLinearRegression.class);
 	 	conf.setJobName("Linear Regression Recombine");
 	 	conf.setOutputKeyClass(Text.class);
@@ -1240,6 +1159,7 @@ public class MapReduceLinearRegression {
 		JobClient.runJob(conf);
 		//Calculate inverse
 
+		System.out.println("Calculating Inverse");
 		Process p;
 		try {
 			p = Runtime.getRuntime().exec("java -Xmx2048m -cp ./commons-math3-3.2/commons-math3-3.2.jar:./linear_regression/ Inverse " + xRows);
@@ -1373,6 +1293,46 @@ public class MapReduceLinearRegression {
 	 	FileOutputFormat.setOutputPath(conf, new Path("temp2"));
 	 	
 		JobClient.runJob(conf);
+
+		//Transpose betas
+		conf = new JobConf(MapReduceLinearRegression.class);
+	 	conf.setJobName("Linear Regression Transpose transpose betas");
+	 	conf.setOutputKeyClass(Text.class);
+	 	conf.setOutputValueClass(Text.class);	
+ 
+	 	conf.setMapperClass(MapReduceLinearRegression.TransposeBetasMap.class);
+	 	conf.setReducerClass(MapReduceLinearRegression.TransposeBetasReduce.class);
+	 	
+	 	conf.setInputFormat(TextInputFormat.class);
+	 	conf.setOutputFormat(TextOutputFormat.class);
+	 	
+		fs.delete(new Path("temp1"), true);
+	 	FileInputFormat.setInputPaths(conf, new Path("temp2"));
+	 	FileOutputFormat.setOutputPath(conf, new Path("temp1"));
+	 	
+		JobClient.runJob(conf);
+
+		//Multiply Betas and testX
+		conf = new JobConf(MapReduceLinearRegression.class);
+	 	conf.setJobName("Linear Regression Transpose transpose betas");
+	 	conf.setOutputKeyClass(Text.class);
+	 	conf.setOutputValueClass(Text.class);	
+ 
+	 	conf.setMapperClass(MapReduceLinearRegression.BetasTimesTestXMap.class);
+	 	conf.setReducerClass(MapReduceLinearRegression.BetasTimesTestXReduce.class);
+	 	
+	 	conf.setInputFormat(TextInputFormat.class);
+	 	conf.setOutputFormat(TextOutputFormat.class);
+	 	
+		fs.delete(new Path("temp2"), true);
+	 	FileInputFormat.setInputPaths(conf, new Path("temp1"));
+	 	FileOutputFormat.setOutputPath(conf, new Path(args[1]));
+	 	
+		JobClient.runJob(conf);
+
+		fs.delete(new Path("temp1"), true);
+
+		//TODO fix BetasTimesTextXReduce to have cutoff number of rows
 
 
 	 }
